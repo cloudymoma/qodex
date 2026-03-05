@@ -1,6 +1,6 @@
 <img src="misc/qodex_txt.png" height="80" />
 
-[![Go Build](https://github.com/cloudymoma/qodex/actions/workflows/go.yml/badge.svg)](https://github.com/cloudymoma/qodex/actions/workflows/go.yml)
+[![Build](https://github.com/cloudymoma/qodex/actions/workflows/go.yml/badge.svg)](https://github.com/cloudymoma/qodex/actions/workflows/go.yml)
 
 Interactive codebase visualizer. Paste a public GitHub URL, explore its dependency graph in 3D, search code, and browse files — all in a dark-themed web UI.
 
