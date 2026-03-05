@@ -1,0 +1,54 @@
+# Go compiled binaries
+bin/
+qodex
+*.exe
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+web/static/*
+!web/static/.gitkeep
+
+# Data & logs (runtime artifacts)
+data/
+logs/
+*.log
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project
+.qodex.pid
+ERROR.md
+plan-claude.md
+BUGFIX-VERIFICATION.md
+
+# Build cache
+*.tsbuildinfo
+
+# One-off utility scripts (logo processing)
+bg_remove.py
+fix_text.py
+
+# Env & secrets
+.env
+.env.*
+
+# Firebase
+firebase-debug.log
+.firebase/
+
+plan.md
