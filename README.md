@@ -1,4 +1,4 @@
-<img src="misc/qodex_logo.png" height="60" align="left" /> <img src="misc/qodex_txt.png" height="40" />
+<img src="misc/qodex_txt.png" height="80" />
 
 [![Go Build](https://github.com/cloudymoma/qodex/actions/workflows/go.yml/badge.svg)](https://github.com/cloudymoma/qodex/actions/workflows/go.yml)
 
