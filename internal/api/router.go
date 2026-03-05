@@ -26,6 +26,7 @@ func NewRouter(
 	mux.HandleFunc("GET /api/tree", handler.Tree(ingestSvc, logger))
 	mux.HandleFunc("GET /api/search", handler.Search(idx, logger))
 	mux.HandleFunc("GET /api/repos", handler.Repos(ingestSvc, logger))
+	mux.HandleFunc("GET /api/history", handler.History(ingestSvc, logger))
 	mux.HandleFunc("GET /api/file", handler.File(ingestSvc, logger))
 
 	// Serve frontend static files

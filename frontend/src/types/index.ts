@@ -76,5 +76,19 @@ export interface FileResponse {
   language: string;
 }
 
+// Git history
+export interface HistoryResponse {
+  repo_url: string;
+  commits: CommitEntry[];
+}
+
+export interface CommitEntry {
+  hash: string;
+  short: string;
+  message: string;
+  author: string;
+  date: string;
+}
+
 // UI types
-export type BottomPanelMode = 'search' | 'chat' | 'hidden';
+export type BottomPanelMode = 'search' | 'chat' | 'history' | 'hidden';

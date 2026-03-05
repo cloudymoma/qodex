@@ -12,6 +12,10 @@ import (
 	"sync"
 	"time"
 
+	"io"
+
+	"github.com/go-git/go-git/v5"
+
 	"qodex/internal/config"
 	"qodex/internal/graph"
 	"qodex/internal/indexer"
@@ -325,6 +329,62 @@ func (s *IngestService) FileContent(path string) (string, error) {
 	}
 
 	return string(data), nil
+}
+
+// CurrentRepoURL returns the URL of the currently ingested repo.
+func (s *IngestService) CurrentRepoURL() string {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	for _, r := range s.repos {
+		if r.RepoName == s.currentRepoName {
+			return r.URL
+		}
+	}
+	return ""
+}
+
+// CommitHistory returns the git commit log for the currently ingested repo.
+func (s *IngestService) CommitHistory(limit int) ([]models.CommitEntry, error) {
+	s.mu.RLock()
+	repoName := s.currentRepoName
+	s.mu.RUnlock()
+
+	if repoName == "" {
+		return nil, fmt.Errorf("no repository ingested")
+	}
+
+	codeDir := s.cfg.RepoCodeDir(repoName)
+	repo, err := git.PlainOpen(codeDir)
+	if err != nil {
+		return nil, fmt.Errorf("open repo: %w", err)
+	}
+
+	logIter, err := repo.Log(&git.LogOptions{Order: git.LogOrderCommitterTime})
+	if err != nil {
+		return nil, fmt.Errorf("git log: %w", err)
+	}
+	defer logIter.Close()
+
+	var commits []models.CommitEntry
+	for i := 0; i < limit; i++ {
+		c, err := logIter.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, fmt.Errorf("iterate commits: %w", err)
+		}
+		hash := c.Hash.String()
+		commits = append(commits, models.CommitEntry{
+			Hash:    hash,
+			Short:   hash[:7],
+			Message: strings.TrimSpace(c.Message),
+			Author:  c.Author.Name,
+			Date:    c.Author.When.Format("2006-01-02 15:04"),
+		})
+	}
+
+	return commits, nil
 }
 
 // sanitizePart removes unsafe characters from URL path segments.

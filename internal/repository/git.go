@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/go-git/go-git/v5"
@@ -30,6 +31,16 @@ func (r *GitRepository) Clone(ctx context.Context, rawURL, dest, branch string) 
 
 	// If the directory already exists and is a git repo, pull instead of re-cloning
 	if _, err := os.Stat(dest); err == nil {
+		// If the existing clone is shallow, remove and re-clone fully
+		shallowFile := filepath.Join(dest, ".git", "shallow")
+		if _, err := os.Stat(shallowFile); err == nil {
+			r.logger.Info("removing shallow clone for full re-clone", "path", dest)
+			if rmErr := os.RemoveAll(dest); rmErr != nil {
+				return fmt.Errorf("remove shallow repo dir: %w", rmErr)
+			}
+			return r.clone(ctx, rawURL, dest, branch)
+		}
+
 		if pullErr := r.pull(ctx, dest, branch); pullErr != nil {
 			// Pull failed (stale/corrupted clone) — remove and re-clone fresh
 			r.logger.Warn("pull failed, removing stale clone and re-cloning",
@@ -51,7 +62,6 @@ func (r *GitRepository) clone(ctx context.Context, rawURL, dest, branch string) 
 	opts := &git.CloneOptions{
 		URL:      rawURL,
 		Progress: nil, // silent
-		Depth:    1,   // shallow clone for speed
 	}
 
 	if branch != "" {
@@ -104,7 +114,6 @@ func (r *GitRepository) pull(ctx context.Context, dest, branch string) error {
 		ReferenceName: refName,
 		SingleBranch:  true,
 		Force:         true,
-		Depth:         1,
 	}
 
 	err = wt.PullContext(ctx, pullOpts)

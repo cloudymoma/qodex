@@ -2,6 +2,8 @@
 
 Interactive codebase visualizer. Paste a public GitHub URL, explore its dependency graph in 3D, search code, and browse files — all in a dark-themed web UI.
 
+![Qodex Screenshot](misc/qodex_screenshot.png)
+
 ## Quick Start
 
 ```bash

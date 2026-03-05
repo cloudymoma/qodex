@@ -6,6 +6,7 @@ import type {
   IngestResponse,
   RepoEntry,
   FileResponse,
+  HistoryResponse,
 } from '@/types';
 
 const API_BASE = '';
@@ -53,5 +54,9 @@ export const api = {
 
   getFile(path: string): Promise<FileResponse> {
     return fetchJSON(`/api/file?path=${encodeURIComponent(path)}`);
+  },
+
+  getHistory(limit = 50): Promise<HistoryResponse> {
+    return fetchJSON(`/api/history?limit=${limit}`);
   },
 };

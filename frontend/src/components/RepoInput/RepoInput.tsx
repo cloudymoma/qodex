@@ -62,7 +62,11 @@ export function RepoInput() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setShowDropdown(false);
-    doIngest(url, branch);
+    const effectiveUrl = url.trim() || 'https://github.com/infinilabs/zipora';
+    if (!url.trim()) {
+      setUrl(effectiveUrl);
+    }
+    doIngest(effectiveUrl, branch);
   };
 
   const handleSelect = (repo: RepoEntry) => {
@@ -158,7 +162,7 @@ export function RepoInput() {
 
         <button
           type="submit"
-          disabled={loading || !url.trim()}
+          disabled={loading}
           className="px-4 py-1.5 bg-accent-primary text-white rounded text-sm font-medium hover:bg-accent-primary/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
         >
           {loading ? (
