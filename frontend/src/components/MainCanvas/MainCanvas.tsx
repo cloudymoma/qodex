@@ -1,4 +1,5 @@
 import { useRef, useCallback, useEffect, useState, useMemo, lazy, Suspense } from 'react';
+import * as THREE from 'three';
 import SpriteText from 'three-spritetext';
 import ForceGraph2D, { type ForceGraphMethods as ForceGraphMethods2D } from 'react-force-graph-2d';
 import { useGraphData } from '@/contexts/GraphDataContext';
@@ -31,11 +32,14 @@ function scaleNodeVal(val: number | undefined): number {
 
 // --- Extension-based coloring (persistent per session, shuffled per load) ---
 
+// Node colors must not conflict with size-indicator center dot colors:
+// blue=#0000FF, tiffany=#0ABAB5, green=#00FF00, yellow=#FFD700, red=#FF0000
 const COLOR_PALETTE = [
-  '#00ADD8', '#DEA584', '#F7DF1E', '#3178C6', '#3776AB',
-  '#B07219', '#E34C26', '#563D7C', '#A97BFF', '#00B4AB',
-  '#FF6F61', '#88C0D0', '#A3BE8C', '#EBCB8B', '#D08770',
-  '#BF616A', '#B48EAD', '#5E81AC', '#81A1C1', '#8FBCBB',
+  '#00ADD8', '#DEA584', '#3178C6', '#3776AB',
+  '#B07219', '#E34C26', '#563D7C', '#A97BFF',
+  '#FF6F61', '#88C0D0', '#EBCB8B', '#D08770',
+  '#B48EAD', '#5E81AC', '#81A1C1', '#8FBCBB',
+  '#E06C75', '#C678DD', '#D19A66', '#56B6C2',
 ];
 
 // Fisher-Yates shuffle (runs once per page load → different order each session)
@@ -66,6 +70,24 @@ function getExtColor(name: string): string {
   const color = shuffledPalette[extColorMap.size % shuffledPalette.length]!;
   extColorMap.set(ext, color);
   return color;
+}
+
+// --- File size categories (by line count) ---
+
+const SIZE_CATEGORIES = [
+  { label: '0–50',    name: 'Tiny',   color: '#0000FF' },  // blue
+  { label: '51–200',  name: 'Small',  color: '#0ABAB5' },  // tiffany blue
+  { label: '201–500', name: 'Medium', color: '#00FF00' },  // green
+  { label: '501–1k',  name: 'Large',  color: '#FFD700' },  // yellow
+  { label: '>1,000',  name: 'Giant',  color: '#FF0000' },  // red
+] as const;
+
+function getSizeColor(lines: number | undefined): string {
+  if (!lines || lines <= 50) return SIZE_CATEGORIES[0].color;
+  if (lines <= 200) return SIZE_CATEGORIES[1].color;
+  if (lines <= 500) return SIZE_CATEGORIES[2].color;
+  if (lines <= 1000) return SIZE_CATEGORIES[3].color;
+  return SIZE_CATEGORIES[4].color;
 }
 
 // --- Component ---
@@ -188,6 +210,13 @@ export function MainCanvas() {
         ctx.stroke();
       }
 
+      // Center dot: file size category indicator
+      const dotRadius = Math.max(nodeSize * 0.35, 1.5);
+      ctx.beginPath();
+      ctx.arc(x, y, dotRadius, 0, 2 * Math.PI);
+      ctx.fillStyle = getSizeColor(n.val);
+      ctx.fill();
+
       // File name label below node
       ctx.font = `${fontSize}px Sans-Serif`;
       ctx.textAlign = 'center';
@@ -198,15 +227,27 @@ export function MainCanvas() {
     [focusedNodeIds],
   );
 
-  // 3D: SpriteText label above the default sphere
+  // 3D: SpriteText label + center dot sphere above/inside the default sphere
   const nodeThreeObject3D = useCallback(
     (node: object) => {
       const n = node as GraphNode;
+      const group = new THREE.Group();
+
+      // Center dot: small sphere with file-size color
+      const dotRadius = scaleNodeVal(n.val) * 0.4;
+      const dotGeom = new THREE.SphereGeometry(dotRadius, 12, 12);
+      const dotMat = new THREE.MeshBasicMaterial({ color: getSizeColor(n.val) });
+      const dotMesh = new THREE.Mesh(dotGeom, dotMat);
+      group.add(dotMesh);
+
+      // Text label above
       const sprite = new SpriteText(n.name);
       sprite.color = focusedNodeIds.has(n.id) ? HIGHLIGHT_COLOR : '#ccc';
       sprite.textHeight = 2;
       sprite.position.y = scaleNodeVal(n.val) + 3;
-      return sprite;
+      group.add(sprite);
+
+      return group;
     },
     [focusedNodeIds],
   );
@@ -312,18 +353,34 @@ export function MainCanvas() {
             )}
           </div>
 
-          {/* Extension color legend */}
-          {legend.length > 0 && (
-            <div className="absolute bottom-3 left-3 text-xs bg-dark-bg/80 px-3 py-2 rounded border border-dark-border max-h-48 overflow-auto">
-              {legend.map(({ ext, color }) => (
-                <div key={ext} className="flex items-center gap-2 py-0.5">
-                  <span
-                    className="w-2.5 h-2.5 rounded-full inline-block shrink-0"
-                    style={{ backgroundColor: color }}
-                  />
-                  <span className="text-dark-text-secondary">{ext}</span>
+          {/* Bottom-left legends: file types on top, lines on bottom */}
+          {hasData && (
+            <div className="absolute bottom-3 left-3 text-xs flex flex-col gap-2">
+              {legend.length > 0 && (
+                <div className="bg-dark-bg/80 px-3 py-2 rounded border border-dark-border max-h-48 overflow-auto">
+                  {legend.map(({ ext, color }) => (
+                    <div key={ext} className="flex items-center gap-2 py-0.5">
+                      <span
+                        className="w-2.5 h-2.5 rounded-full inline-block shrink-0"
+                        style={{ backgroundColor: color }}
+                      />
+                      <span className="text-dark-text-secondary">{ext}</span>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              )}
+              <div className="bg-dark-bg/80 px-3 py-2 rounded border border-dark-border">
+                <div className="text-dark-text-secondary mb-1 font-medium">Lines</div>
+                {SIZE_CATEGORIES.map((cat) => (
+                  <div key={cat.label} className="flex items-center gap-2 py-0.5">
+                    <span
+                      className="w-2.5 h-2.5 rounded-full inline-block shrink-0"
+                      style={{ backgroundColor: cat.color }}
+                    />
+                    <span className="text-dark-text-secondary">{cat.label}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 

@@ -15,21 +15,23 @@ export function Layout() {
       <RepoInput />
 
       {/* Main content area */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Left sidebar */}
+      <div className="flex flex-1 overflow-hidden relative">
+        {/* Left sidebar + toggle wrapper */}
         <div
           className={clsx(
-            'border-r border-dark-border bg-dark-bg-secondary transition-all duration-300 relative overflow-hidden',
+            'shrink-0 border-r border-dark-border bg-dark-bg-secondary transition-[width] duration-300 overflow-hidden relative',
             sidebarCollapsed ? 'w-0 border-r-0' : 'w-72',
           )}
         >
-          {!sidebarCollapsed && <LeftSidebar />}
+          <div className="w-72 h-full">
+            <LeftSidebar />
+          </div>
         </div>
 
-        {/* Sidebar toggle */}
+        {/* Sidebar toggle — sits right after the sidebar in flow */}
         <button
           onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-          className="absolute left-0 top-1/2 -translate-y-1/2 z-20 bg-dark-bg-secondary border border-dark-border rounded-r-md px-0.5 py-2 text-dark-text-secondary hover:text-dark-text hover:bg-dark-bg-tertiary transition-colors"
+          className="absolute top-1/2 -translate-y-1/2 z-20 bg-dark-bg-secondary border border-dark-border rounded-r-md px-0.5 py-2 text-dark-text-secondary hover:text-dark-text hover:bg-dark-bg-tertiary transition-all duration-300"
           style={{ left: sidebarCollapsed ? 0 : 'calc(18rem - 1px)' }}
           title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
