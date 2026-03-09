@@ -31,7 +31,7 @@ export function Layout() {
         {/* Sidebar toggle — sits right after the sidebar in flow */}
         <button
           onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-          className="absolute top-1/2 -translate-y-1/2 z-20 bg-dark-bg-secondary border border-dark-border rounded-r-md px-0.5 py-2 text-dark-text-secondary hover:text-dark-text hover:bg-dark-bg-tertiary transition-all duration-300"
+          className="absolute top-1/2 -translate-y-1/2 z-40 bg-dark-bg-secondary border border-dark-border rounded-r-md px-0.5 py-2 text-dark-text-secondary hover:text-dark-text hover:bg-dark-bg-tertiary transition-all duration-300"
           style={{ left: sidebarCollapsed ? 0 : 'calc(18rem - 1px)' }}
           title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
@@ -39,7 +39,7 @@ export function Layout() {
         </button>
 
         {/* 3D Graph canvas */}
-        <div className="flex-1 relative">
+        <div className="flex-1 relative overflow-hidden">
           <MainCanvas />
         </div>
       </div>

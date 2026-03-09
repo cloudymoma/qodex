@@ -174,7 +174,7 @@ export function CodeOverlay({ path, onClose }: CodeOverlayProps) {
   }, [searchQuery]);
 
   return (
-    <div className="absolute inset-0 z-20 flex flex-col bg-dark-bg/95 backdrop-blur-sm">
+    <div className="absolute inset-0 z-30 flex flex-col bg-dark-bg/95 backdrop-blur-sm">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-2 bg-dark-surface border-b border-dark-border shrink-0">
         <div className="flex items-center gap-2 min-w-0 mr-4">
