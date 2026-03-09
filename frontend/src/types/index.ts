@@ -88,6 +88,7 @@ export interface CommitEntry {
   message: string;
   author: string;
   date: string;
+  files_changed?: string[];
 }
 
 // UI types

@@ -8,9 +8,10 @@ type HistoryResponse struct {
 
 // CommitEntry represents a single git commit.
 type CommitEntry struct {
-	Hash    string `json:"hash"`
-	Short   string `json:"short"`
-	Message string `json:"message"`
-	Author  string `json:"author"`
-	Date    string `json:"date"`
+	Hash         string   `json:"hash"`
+	Short        string   `json:"short"`
+	Message      string   `json:"message"`
+	Author       string   `json:"author"`
+	Date         string   `json:"date"`
+	FilesChanged []string `json:"files_changed,omitempty"`
 }

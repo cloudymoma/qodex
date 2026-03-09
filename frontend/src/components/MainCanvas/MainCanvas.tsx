@@ -5,7 +5,7 @@ import ForceGraph2D, { type ForceGraphMethods as ForceGraphMethods2D } from 'rea
 import { useGraphData } from '@/contexts/GraphDataContext';
 import { useUIState } from '@/contexts/UIStateContext';
 import type { GraphNode } from '@/types';
-import { Loader2, X } from 'lucide-react';
+import { Loader2, X, Box, Square } from 'lucide-react';
 import { CodeOverlay } from './CodeOverlay';
 
 // Lazy-load ForceGraph3D so the page doesn't crash when WebGL is unavailable
@@ -98,8 +98,18 @@ export function MainCanvas() {
   const containerRef = useRef<HTMLDivElement>(null);
   const { displayGraphData, focusNode, resetView, fullGraphData, focusedNodeIds } = useGraphData();
   const hasFocus = focusedNodeIds.size > 0;
-  const { loading, codeViewPath, setCodeViewPath } = useUIState();
+  const { loading, codeViewPath, setCodeViewPath, timelineGlowFiles, timelineGraph } = useUIState();
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
+  const [use3D, setUse3D] = useState(webglSupported);
+
+  // When timeline is active, use the backend-computed graph; otherwise use focus-filtered graph
+  const visibleGraphData = useMemo(() => {
+    if (!timelineGraph) return displayGraphData;
+    return {
+      nodes: timelineGraph.nodes.map(n => ({ ...n })),
+      links: timelineGraph.links.map(l => ({ ...l })),
+    };
+  }, [displayGraphData, timelineGraph]);
 
   // Double-click detection: defer single-click so double-click can cancel it
   const clickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -163,7 +173,7 @@ export function MainCanvas() {
 
   // Auto-fit when data loads
   useEffect(() => {
-    const ref = webglSupported ? graphRef3D : graphRef2D;
+    const ref = use3D ? graphRef3D : graphRef2D;
     if (fullGraphData.nodes.length > 0 && ref.current) {
       setTimeout(() => {
         ref.current?.zoomToFit(400, 50);
@@ -173,13 +183,21 @@ export function MainCanvas() {
 
   // Zoom to fit when focus changes
   useEffect(() => {
-    const ref = webglSupported ? graphRef3D : graphRef2D;
-    if (ref.current && displayGraphData.nodes.length > 0) {
+    const ref = use3D ? graphRef3D : graphRef2D;
+    if (ref.current && visibleGraphData.nodes.length > 0) {
       setTimeout(() => {
         ref.current?.zoomToFit(400, 50);
       }, 100);
     }
-  }, [focusedNodeIds, displayGraphData.nodes.length]);
+  }, [focusedNodeIds, visibleGraphData.nodes.length]);
+
+  // 2D glow animation: keep render loop alive so nodeCanvasObject redraws each frame
+  const glowActive = !use3D && timelineGlowFiles.size > 0;
+  useEffect(() => {
+    if (!glowActive) return;
+    // Kick the simulation so the render loop restarts with our Infinity cooldownTicks
+    graphRef2D.current?.d3ReheatSimulation();
+  }, [glowActive]);
 
   // Node color: highlight focused nodes, otherwise color by extension
   const nodeColor = useCallback(
@@ -210,6 +228,21 @@ export function MainCanvas() {
         ctx.stroke();
       }
 
+      // Breathing glow for timeline-changed files
+      if (timelineGlowFiles.has(n.id)) {
+        const pulse = 0.4 + 0.6 * Math.abs(Math.sin(Date.now() / 600));
+        const glowRadius = nodeSize + 6;
+        ctx.beginPath();
+        ctx.arc(x, y, glowRadius, 0, 2 * Math.PI);
+        ctx.fillStyle = `rgba(255, 255, 100, ${0.25 * pulse})`;
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(x, y, glowRadius, 0, 2 * Math.PI);
+        ctx.strokeStyle = `rgba(255, 255, 100, ${0.7 * pulse})`;
+        ctx.lineWidth = 1.5 / globalScale;
+        ctx.stroke();
+      }
+
       // Center dot: file size category indicator
       const dotRadius = Math.max(nodeSize * 0.35, 1.5);
       ctx.beginPath();
@@ -224,10 +257,10 @@ export function MainCanvas() {
       ctx.fillStyle = isFocused ? HIGHLIGHT_COLOR : '#ccc';
       ctx.fillText(n.name, x, y + nodeSize + 2);
     },
-    [focusedNodeIds],
+    [focusedNodeIds, timelineGlowFiles],
   );
 
-  // 3D: SpriteText label + center dot sphere above/inside the default sphere
+  // 3D: SpriteText label + center dot sphere + optional glow sphere
   const nodeThreeObject3D = useCallback(
     (node: object) => {
       const n = node as GraphNode;
@@ -240,6 +273,20 @@ export function MainCanvas() {
       const dotMesh = new THREE.Mesh(dotGeom, dotMat);
       group.add(dotMesh);
 
+      // Glow sphere for timeline-changed files
+      if (timelineGlowFiles.has(n.id)) {
+        const glowRadius = scaleNodeVal(n.val) + 2;
+        const glowGeom = new THREE.SphereGeometry(glowRadius, 16, 16);
+        const glowMat = new THREE.MeshBasicMaterial({
+          color: 0xffff64,
+          transparent: true,
+          opacity: 0.35,
+        });
+        const glowMesh = new THREE.Mesh(glowGeom, glowMat);
+        glowMesh.userData.isGlow = true;
+        group.add(glowMesh);
+      }
+
       // Text label above
       const sprite = new SpriteText(n.name);
       sprite.color = focusedNodeIds.has(n.id) ? HIGHLIGHT_COLOR : '#ccc';
@@ -249,23 +296,36 @@ export function MainCanvas() {
 
       return group;
     },
-    [focusedNodeIds],
+    [focusedNodeIds, timelineGlowFiles],
   );
 
-  const hasData = displayGraphData.nodes.length > 0;
+  // 3D: Animate glow meshes with breathing effect
+  const onEngineTick3D = useCallback(() => {
+    if (timelineGlowFiles.size === 0 || !graphRef3D.current) return;
+    const scene = graphRef3D.current.scene?.();
+    if (!scene) return;
+    const pulse = 0.2 + 0.8 * Math.abs(Math.sin(Date.now() / 600));
+    scene.traverse((obj: THREE.Object3D) => {
+      if (obj.userData.isGlow && obj instanceof THREE.Mesh) {
+        (obj.material as THREE.MeshBasicMaterial).opacity = 0.35 * pulse;
+      }
+    });
+  }, [timelineGlowFiles]);
+
+  const hasData = visibleGraphData.nodes.length > 0;
 
   // Build legend from current extension-color assignments
   const legend = useMemo(() => {
     if (!hasData) return [];
     const seen = new Set<string>();
-    for (const node of displayGraphData.nodes) {
+    for (const node of visibleGraphData.nodes) {
       const dot = node.name.lastIndexOf('.');
       if (dot > 0) seen.add(node.name.substring(dot).toLowerCase());
     }
     return Array.from(seen)
       .sort()
       .map((ext) => ({ ext, color: getExtColor(`file${ext}`) }));
-  }, [displayGraphData, hasData]);
+  }, [visibleGraphData, hasData]);
 
   return (
     <div ref={containerRef} className="w-full h-full bg-dark-bg relative">
@@ -281,7 +341,7 @@ export function MainCanvas() {
 
       {hasData ? (
         <>
-          {webglSupported ? (
+          {use3D ? (
             <Suspense fallback={
               <div className="flex items-center justify-center h-full">
                 <Loader2 size={24} className="animate-spin text-accent-primary" />
@@ -291,7 +351,7 @@ export function MainCanvas() {
                 ref={graphRef3D}
                 width={dimensions.width}
                 height={dimensions.height}
-                graphData={displayGraphData}
+                graphData={visibleGraphData}
                 nodeLabel={(node: object) => (node as GraphNode).name}
                 nodeColor={nodeColor}
                 nodeVal={(node: object) => scaleNodeVal((node as GraphNode).val)}
@@ -305,6 +365,7 @@ export function MainCanvas() {
                 linkDirectionalArrowRelPos={1}
                 onNodeClick={(node: object) => handleNodeClick(node as GraphNode)}
                 onBackgroundClick={handleBackgroundClick}
+                onEngineTick={onEngineTick3D}
                 showNavInfo={false}
                 backgroundColor="#0a0a0a"
               />
@@ -314,7 +375,7 @@ export function MainCanvas() {
               ref={graphRef2D}
               width={dimensions.width}
               height={dimensions.height}
-              graphData={displayGraphData}
+              graphData={visibleGraphData}
               nodeLabel={(node: object) => (node as GraphNode).name}
               nodeColor={nodeColor}
               nodeVal={(node: object) => scaleNodeVal((node as GraphNode).val)}
@@ -327,6 +388,7 @@ export function MainCanvas() {
               onNodeClick={(node: object) => handleNodeClick(node as GraphNode)}
               onBackgroundClick={handleBackgroundClick}
               backgroundColor="#0a0a0a"
+              cooldownTicks={glowActive ? Infinity : undefined}
             />
           )}
 
@@ -342,15 +404,27 @@ export function MainCanvas() {
             </button>
           )}
 
-          {/* Stats overlay */}
-          <div className="absolute top-3 right-3 text-xs text-dark-text-secondary bg-dark-bg/70 px-2 py-1 rounded">
-            {displayGraphData.nodes.length} nodes / {displayGraphData.links.length} edges
-            {hasFocus && (
-              <span className="ml-2 text-accent-primary">({focusedNodeIds.size} focused)</span>
-            )}
-            {!webglSupported && (
-              <span className="ml-2 text-accent-warning">(2D mode)</span>
-            )}
+          {/* Stats overlay + 2D/3D toggle */}
+          <div className="absolute top-3 right-3 flex items-center gap-2">
+            <div className="text-xs text-dark-text-secondary bg-dark-bg/70 px-2 py-1 rounded">
+              {visibleGraphData.nodes.length} nodes / {visibleGraphData.links.length} edges
+              {hasFocus && (
+                <span className="ml-2 text-accent-primary">({focusedNodeIds.size} focused)</span>
+              )}
+            </div>
+            <button
+              onClick={() => setUse3D(!use3D)}
+              disabled={!webglSupported}
+              className={`flex items-center gap-1 px-2 py-1 rounded text-xs transition-colors ${
+                webglSupported
+                  ? 'bg-dark-bg/70 text-dark-text-secondary hover:text-dark-text hover:bg-dark-bg/90 border border-dark-border cursor-pointer'
+                  : 'bg-dark-bg/40 text-dark-text-secondary/40 border border-dark-border/40 cursor-not-allowed'
+              }`}
+              title={webglSupported ? `Switch to ${use3D ? '2D' : '3D'} mode` : 'WebGL not supported'}
+            >
+              {use3D ? <Square size={12} /> : <Box size={12} />}
+              {use3D ? '2D' : '3D'}
+            </button>
           </div>
 
           {/* Bottom-left legends: file types on top, lines on bottom */}

@@ -13,7 +13,7 @@ import (
 // History handles GET /api/history.
 func History(svc *service.IngestService, logger *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		limit := 50
+		limit := 0 // 0 = all commits
 		if v := r.URL.Query().Get("limit"); v != "" {
 			if n, err := strconv.Atoi(v); err == nil && n > 0 {
 				limit = n

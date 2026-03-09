@@ -24,6 +24,10 @@ interface UIStateContextValue {
   setCodeViewPath: (path: string | null) => void;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
+  timelineGlowFiles: ReadonlySet<string>;
+  setTimelineGlowFiles: (files: ReadonlySet<string>) => void;
+  timelineGraph: import('@/types').GraphData | null;
+  setTimelineGraph: (data: import('@/types').GraphData | null) => void;
 }
 
 const UIStateContext = createContext<UIStateContextValue | null>(null);
@@ -36,6 +40,8 @@ export function UIStateProvider({ children }: { children: ReactNode }) {
   const [repoName, setRepoName] = useState('');
   const [codeViewPath, setCodeViewPath] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [timelineGlowFiles, setTimelineGlowFiles] = useState<ReadonlySet<string>>(new Set());
+  const [timelineGraph, setTimelineGraph] = useState<import('@/types').GraphData | null>(null);
 
   const toggleBottomPanel = useCallback(() => {
     setBottomPanelMode((prev) => (prev === 'hidden' ? 'search' : 'hidden'));
@@ -58,8 +64,12 @@ export function UIStateProvider({ children }: { children: ReactNode }) {
       setCodeViewPath,
       searchQuery,
       setSearchQuery,
+      timelineGlowFiles,
+      setTimelineGlowFiles,
+      timelineGraph,
+      setTimelineGraph,
     }),
-    [bottomPanelMode, toggleBottomPanel, sidebarCollapsed, treeData, loading, repoName, codeViewPath, searchQuery],
+    [bottomPanelMode, toggleBottomPanel, sidebarCollapsed, treeData, loading, repoName, codeViewPath, searchQuery, timelineGlowFiles, timelineGraph],
   );
 
   return (

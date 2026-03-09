@@ -15,6 +15,7 @@ import (
 	"io"
 
 	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing/object"
 
 	"qodex/internal/config"
 	"qodex/internal/graph"
@@ -212,6 +213,43 @@ func (s *IngestService) GraphData() *models.GraphData {
 	}
 }
 
+// FilteredGraph returns a subgraph containing only the specified files and their interconnecting links.
+func (s *IngestService) FilteredGraph(files []string) *models.GraphData {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	fileSet := make(map[string]bool, len(files))
+	for _, f := range files {
+		fileSet[f] = true
+	}
+
+	var nodes []models.Node
+	for _, n := range s.data.Graph.Nodes {
+		if fileSet[n.ID] {
+			nodes = append(nodes, n)
+		}
+	}
+
+	var links []models.Link
+	for _, l := range s.data.Graph.Links {
+		if fileSet[l.Source] && fileSet[l.Target] {
+			links = append(links, l)
+		}
+	}
+
+	if nodes == nil {
+		nodes = []models.Node{}
+	}
+	if links == nil {
+		links = []models.Link{}
+	}
+
+	return &models.GraphData{
+		Nodes: nodes,
+		Links: links,
+	}
+}
+
 // TreeData returns a copy of the current file tree.
 func (s *IngestService) TreeData() []*models.TreeNode {
 	s.mu.RLock()
@@ -366,7 +404,7 @@ func (s *IngestService) CommitHistory(limit int) ([]models.CommitEntry, error) {
 	defer logIter.Close()
 
 	var commits []models.CommitEntry
-	for i := 0; i < limit; i++ {
+	for i := 0; limit == 0 || i < limit; i++ {
 		c, err := logIter.Next()
 		if err == io.EOF {
 			break
@@ -375,16 +413,57 @@ func (s *IngestService) CommitHistory(limit int) ([]models.CommitEntry, error) {
 			return nil, fmt.Errorf("iterate commits: %w", err)
 		}
 		hash := c.Hash.String()
+		changed := commitChangedFiles(c)
 		commits = append(commits, models.CommitEntry{
-			Hash:    hash,
-			Short:   hash[:7],
-			Message: strings.TrimSpace(c.Message),
-			Author:  c.Author.Name,
-			Date:    c.Author.When.Format("2006-01-02 15:04"),
+			Hash:         hash,
+			Short:        hash[:7],
+			Message:      strings.TrimSpace(c.Message),
+			Author:       c.Author.Name,
+			Date:         c.Author.When.Format("2006-01-02 15:04"),
+			FilesChanged: changed,
 		})
 	}
 
 	return commits, nil
+}
+
+// commitChangedFiles returns the list of file paths changed in a commit.
+func commitChangedFiles(c *object.Commit) []string {
+	tree, err := c.Tree()
+	if err != nil {
+		return nil
+	}
+
+	parent, err := c.Parent(0)
+	if err != nil {
+		// Initial commit — all files are new
+		var files []string
+		tree.Files().ForEach(func(f *object.File) error {
+			files = append(files, f.Name)
+			return nil
+		})
+		return files
+	}
+
+	parentTree, err := parent.Tree()
+	if err != nil {
+		return nil
+	}
+
+	changes, err := object.DiffTree(parentTree, tree)
+	if err != nil {
+		return nil
+	}
+
+	var files []string
+	for _, change := range changes {
+		name := change.To.Name
+		if name == "" {
+			name = change.From.Name // deleted file
+		}
+		files = append(files, name)
+	}
+	return files
 }
 
 // sanitizePart removes unsafe characters from URL path segments.

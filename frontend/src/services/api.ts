@@ -11,7 +11,7 @@ import type {
 
 const API_BASE = '';
 
-async function fetchJSON<T>(url: string, init?: RequestInit): Promise<T> {
+async function fetchJSON<T>(url: string, init?: RequestInit & { signal?: AbortSignal }): Promise<T> {
   const res = await fetch(`${API_BASE}${url}`, {
     ...init,
     headers: {
@@ -58,5 +58,13 @@ export const api = {
 
   getHistory(limit = 50): Promise<HistoryResponse> {
     return fetchJSON(`/api/history?limit=${limit}`);
+  },
+
+  getTimelineGraph(files: string[], signal?: AbortSignal): Promise<GraphData> {
+    return fetchJSON('/api/graph/timeline', {
+      method: 'POST',
+      body: JSON.stringify({ files }),
+      signal,
+    });
   },
 };
