@@ -264,7 +264,7 @@ export function MainCanvas() {
     }
     return Array.from(seen)
       .sort()
-      .map((ext) => ({ ext, color: extColorMap.get(ext) || NO_EXT_COLOR }));
+      .map((ext) => ({ ext, color: getExtColor(`file${ext}`) }));
   }, [displayGraphData, hasData]);
 
   return (
