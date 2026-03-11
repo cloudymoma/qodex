@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -15,6 +16,7 @@ import (
 	"gopkg.in/natefinch/lumberjack.v2"
 
 	"qodex/internal/api"
+	"qodex/internal/auth"
 	"qodex/internal/config"
 	"qodex/internal/graph"
 	"qodex/internal/indexer"
@@ -30,6 +32,9 @@ func main() {
 }
 
 func run() error {
+	accessCode := flag.Bool("accesscode", false, "Enable access code protection")
+	flag.Parse()
+
 	// Load configuration
 	cfg, err := config.Load("conf.yaml")
 	if err != nil {
@@ -77,8 +82,15 @@ func run() error {
 
 	logger.Debug("all dependencies initialized")
 
+	// Setup auth if enabled
+	var authMgr *auth.Manager
+	if *accessCode {
+		authMgr = auth.NewManager()
+		logger.Info("access code protection enabled")
+	}
+
 	// Setup HTTP server
-	router := api.NewRouter(cfg, logger, ingestSvc, idx)
+	router := api.NewRouter(cfg, logger, ingestSvc, idx, authMgr)
 
 	server := &http.Server{
 		Addr:         fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port),

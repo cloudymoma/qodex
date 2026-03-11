@@ -28,6 +28,10 @@ run: build ## Build and run the application
 	@echo "Starting $(APP_NAME) on port $(PORT)..."
 	./$(BINARY)
 
+run-accesscode: build ## Build and run with access code protection
+	@echo "Starting $(APP_NAME) on port $(PORT) with access code..."
+	./$(BINARY) --accesscode
+
 start: build ## Build and start in background
 	@echo "Starting $(APP_NAME) in background on port $(PORT)..."
 	@./$(BINARY) & echo $$! > $(PID_FILE)

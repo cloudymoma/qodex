@@ -46,6 +46,7 @@ fix_text.py
 # Env & secrets
 .env
 .env.*
+.accesscode
 
 # Firebase
 firebase-debug.log

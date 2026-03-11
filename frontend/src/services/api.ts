@@ -60,6 +60,28 @@ export const api = {
     return fetchJSON(`/api/history?limit=${limit}`);
   },
 
+  authStatus(): Promise<{ setup: boolean }> {
+    return fetchJSON('/api/auth/status');
+  },
+
+  authSetup(code: string): Promise<{ status: string; error?: string }> {
+    return fetchJSON('/api/auth/setup', {
+      method: 'POST',
+      body: JSON.stringify({ code }),
+    });
+  },
+
+  authVerify(code: string): Promise<{ status: string; error?: string }> {
+    return fetchJSON('/api/auth/verify', {
+      method: 'POST',
+      body: JSON.stringify({ code }),
+    });
+  },
+
+  authKeepalive(): Promise<{ status: string }> {
+    return fetchJSON('/api/auth/keepalive', { method: 'POST' });
+  },
+
   getTimelineGraph(files: string[], signal?: AbortSignal): Promise<GraphData> {
     return fetchJSON('/api/graph/timeline', {
       method: 'POST',
