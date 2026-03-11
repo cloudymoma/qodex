@@ -4,6 +4,7 @@ import { useGraphData } from '@/contexts/GraphDataContext';
 import { useUIState } from '@/contexts/UIStateContext';
 import type { SearchResult } from '@/types';
 import { Search, File } from 'lucide-react';
+import { track } from '@/services/tracker';
 
 export function SearchPanel() {
   const [query, setQuery] = useState('');
@@ -18,6 +19,7 @@ export function SearchPanel() {
 
     setSearching(true);
     setSearchQuery(query.trim());
+    track('search', 'search_panel', query.trim());
     try {
       const resp = await api.search(query.trim());
       setResults(resp.results || []);

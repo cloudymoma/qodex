@@ -5,6 +5,7 @@ import { MainCanvas } from '@/components/MainCanvas/MainCanvas';
 import { BottomPanel } from '@/components/BottomPanel/BottomPanel';
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import clsx from 'clsx';
+import { track } from '@/services/tracker';
 
 export function Layout() {
   const { bottomPanelMode, setBottomPanelMode, sidebarCollapsed, setSidebarCollapsed } = useUIState();
@@ -30,7 +31,7 @@ export function Layout() {
 
         {/* Sidebar toggle — sits right after the sidebar in flow */}
         <button
-          onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+          onClick={() => { track('toggle_sidebar', 'layout', sidebarCollapsed ? 'expand' : 'collapse'); setSidebarCollapsed(!sidebarCollapsed); }}
           className="absolute top-1/2 -translate-y-1/2 z-40 bg-dark-bg-secondary border border-dark-border rounded-r-md px-0.5 py-2 text-dark-text-secondary hover:text-dark-text hover:bg-dark-bg-tertiary transition-all duration-300"
           style={{ left: sidebarCollapsed ? 0 : 'calc(18rem - 1px)' }}
           title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
@@ -50,7 +51,7 @@ export function Layout() {
       {/* Floating toggle button when panel is hidden */}
       {bottomPanelMode === 'hidden' && (
         <button
-          onClick={() => setBottomPanelMode('search')}
+          onClick={() => { track('open_search', 'floating_button'); setBottomPanelMode('search'); }}
           className="fixed bottom-4 right-4 z-40 bg-[#2a2a2a] rounded-full p-2 shadow-lg hover:bg-[#3a3a3a] transition-colors border border-[#444]"
           title="Open Search"
         >

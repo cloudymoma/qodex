@@ -32,6 +32,7 @@ func NewRouter(
 	mux.HandleFunc("GET /api/repos", handler.Repos(ingestSvc, logger))
 	mux.HandleFunc("GET /api/history", handler.History(ingestSvc, logger))
 	mux.HandleFunc("GET /api/file", handler.File(ingestSvc, logger))
+	mux.HandleFunc("POST /api/events", handler.Events(logger))
 
 	// Auth routes (always registered, only enforced when authMgr is set)
 	if authMgr != nil {

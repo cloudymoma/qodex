@@ -2,6 +2,7 @@ import { useUIState } from '@/contexts/UIStateContext';
 import { useGraphData } from '@/contexts/GraphDataContext';
 import { FileTree } from './FileTree';
 import { FolderOpen } from 'lucide-react';
+import { track } from '@/services/tracker';
 
 export function LeftSidebar() {
   const { treeData, repoName, setCodeViewPath } = useUIState();
@@ -22,8 +23,8 @@ export function LeftSidebar() {
         {treeData.length > 0 ? (
           <FileTree
             data={treeData}
-            onFileClick={(path) => focusNode(path)}
-            onFileDblClick={(path) => setCodeViewPath(path)}
+            onFileClick={(path) => { track('click_file', 'file_tree', path); focusNode(path); }}
+            onFileDblClick={(path) => { track('dblclick_file', 'file_tree', path); setCodeViewPath(path); }}
             focusedPaths={focusedNodeIds}
           />
         ) : (

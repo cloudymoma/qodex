@@ -4,6 +4,7 @@ import { ChatPanel } from './ChatPanel';
 import { HistoryPanel } from './HistoryPanel';
 import { Search, MessageSquare, History, ChevronDown } from 'lucide-react';
 import clsx from 'clsx';
+import { track } from '@/services/tracker';
 
 export function BottomPanel() {
   const { bottomPanelMode, setBottomPanelMode } = useUIState();
@@ -16,7 +17,7 @@ export function BottomPanel() {
       <div className="flex items-center justify-between px-4 py-1.5 border-b border-dark-border">
         <div className="flex gap-1">
           <button
-            onClick={() => setBottomPanelMode('search')}
+            onClick={() => { track('tab_switch', 'bottom_panel', 'search'); setBottomPanelMode('search'); }}
             className={clsx(
               'flex items-center gap-1.5 px-3 py-1 rounded text-sm font-medium transition-colors',
               bottomPanelMode === 'search'
@@ -28,7 +29,7 @@ export function BottomPanel() {
             Search
           </button>
           <button
-            onClick={() => setBottomPanelMode('history')}
+            onClick={() => { track('tab_switch', 'bottom_panel', 'history'); setBottomPanelMode('history'); }}
             className={clsx(
               'flex items-center gap-1.5 px-3 py-1 rounded text-sm font-medium transition-colors',
               bottomPanelMode === 'history'
@@ -40,7 +41,7 @@ export function BottomPanel() {
             History
           </button>
           <button
-            onClick={() => setBottomPanelMode('chat')}
+            onClick={() => { track('tab_switch', 'bottom_panel', 'chat'); setBottomPanelMode('chat'); }}
             className={clsx(
               'flex items-center gap-1.5 px-3 py-1 rounded text-sm font-medium transition-colors',
               bottomPanelMode === 'chat'
@@ -54,7 +55,7 @@ export function BottomPanel() {
         </div>
 
         <button
-          onClick={() => setBottomPanelMode('hidden')}
+          onClick={() => { track('tab_switch', 'bottom_panel', 'hidden'); setBottomPanelMode('hidden'); }}
           className="p-1 rounded text-dark-text-secondary hover:text-dark-text hover:bg-dark-bg-tertiary"
         >
           <ChevronDown size={16} />

@@ -4,6 +4,7 @@ import { useUIState } from '@/contexts/UIStateContext';
 import { api } from '@/services/api';
 import type { RepoEntry } from '@/types';
 import { GitBranch, Loader2, AlertCircle, History } from 'lucide-react';
+import { track } from '@/services/tracker';
 
 export function RepoInput() {
   const [url, setUrl] = useState('');
@@ -66,6 +67,7 @@ export function RepoInput() {
     if (!url.trim()) {
       setUrl(effectiveUrl);
     }
+    track('explore', 'repo_input', effectiveUrl);
     doIngest(effectiveUrl, branch);
   };
 
@@ -74,6 +76,7 @@ export function RepoInput() {
     setBranch(repo.branch);
     setShowDropdown(false);
     setError(null);
+    track('select_repo', 'history_dropdown', repo.repo_name);
     doIngest(repo.url, repo.branch);
   };
 

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, type ReactNode } from 'react';
 import { api } from '@/services/api';
 import { Loader2 } from 'lucide-react';
+import { track } from '@/services/tracker';
 
 const KEEPALIVE_INTERVAL = 2 * 60 * 1000; // 2 minutes
 
@@ -88,6 +89,7 @@ export function AccessGate({ children }: { children: ReactNode }) {
         const res = await api.authVerify(code);
         if (res.error) { setError(res.error); return; }
       }
+      track(state === 'setup' ? 'auth_setup' : 'auth_verify', 'access_gate');
       setCode('');
       setState('open');
     } catch (err) {

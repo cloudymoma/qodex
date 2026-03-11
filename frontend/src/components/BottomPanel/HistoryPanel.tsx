@@ -3,6 +3,7 @@ import { useUIState } from '@/contexts/UIStateContext';
 import { api } from '@/services/api';
 import type { CommitEntry } from '@/types';
 import { GitCommit, Loader2, User, Calendar, ExternalLink, Clock, RotateCcw } from 'lucide-react';
+import { track } from '@/services/tracker';
 
 const DEBOUNCE_MS = 800;
 
@@ -108,9 +109,10 @@ export function HistoryPanel() {
   const handleSliderChange = useCallback(
     (pos: number) => {
       setSliderPos(pos);
+      track('timeline_slide', 'history', `${pos}/${chronoCommits.length}`);
       fetchTimelineGraph(pos);
     },
-    [fetchTimelineGraph],
+    [fetchTimelineGraph, chronoCommits.length],
   );
 
   // Keyboard: left/right arrows move one commit

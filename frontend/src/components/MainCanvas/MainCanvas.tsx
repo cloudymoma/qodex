@@ -7,6 +7,7 @@ import { useUIState } from '@/contexts/UIStateContext';
 import type { GraphNode } from '@/types';
 import { Loader2, X, Box, Square } from 'lucide-react';
 import { CodeOverlay } from './CodeOverlay';
+import { track } from '@/services/tracker';
 
 // Lazy-load ForceGraph3D so the page doesn't crash when WebGL is unavailable
 const ForceGraph3D = lazy(() => import('react-force-graph-3d'));
@@ -149,6 +150,7 @@ export function MainCanvas() {
           clearTimeout(clickTimerRef.current);
           clickTimerRef.current = null;
         }
+        track('dblclick_node', 'graph', node.id);
         setCodeViewPath(node.id);
         lastClickRef.current = { nodeId: '', time: 0 };
         return;
@@ -161,6 +163,7 @@ export function MainCanvas() {
       }
       clickTimerRef.current = setTimeout(() => {
         clickTimerRef.current = null;
+        track('click_node', 'graph', node.id);
         focusNode(node.id);
       }, 300);
     },
@@ -168,6 +171,7 @@ export function MainCanvas() {
   );
 
   const handleBackgroundClick = useCallback(() => {
+    track('click_background', 'graph');
     resetView();
   }, [resetView]);
 
@@ -413,7 +417,7 @@ export function MainCanvas() {
               )}
             </div>
             <button
-              onClick={() => setUse3D(!use3D)}
+              onClick={() => { track('toggle_view', 'graph', use3D ? '2D' : '3D'); setUse3D(!use3D); }}
               disabled={!webglSupported}
               className={`flex items-center gap-1 px-2 py-1 rounded text-xs transition-colors ${
                 webglSupported

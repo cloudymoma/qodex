@@ -3,6 +3,9 @@ import { UIStateProvider } from '@/contexts/UIStateContext';
 import { Layout } from '@/components/Layout/Layout';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { AccessGate } from '@/components/AccessGate';
+import { track } from '@/services/tracker';
+
+track('main_page_load', 'app', window.location.href);
 
 function App() {
   return (
