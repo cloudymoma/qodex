@@ -6,6 +6,8 @@ Interactive codebase visualizer. Paste a public GitHub URL, explore its dependen
 
 ![Qodex Screenshot](misc/qodex_screenshot.png)
 
+![Qodex 3D View](misc/qodex_3d.png)
+
 ## Quick Start
 
 ```bash
