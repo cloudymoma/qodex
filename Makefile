@@ -61,6 +61,7 @@ lint: ## Run linter
 frontend: ## Build frontend for production
 	@echo "Building frontend..."
 	cd frontend && npm install && npm run build
+	@mkdir -p web/static
 	@rm -rf web/static/*
 	@cp -r frontend/dist/* web/static/
 	@echo "Frontend built and copied to web/static/"
